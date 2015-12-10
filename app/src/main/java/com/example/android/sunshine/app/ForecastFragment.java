@@ -1,5 +1,6 @@
 package com.example.android.sunshine.app;
 
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -13,6 +14,8 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +24,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 
 public class ForecastFragment extends Fragment {
@@ -46,7 +50,7 @@ public class ForecastFragment extends Fragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.action_refresh:
-                new FetchWeatherTask().execute();
+                new FetchWeatherTask().execute("18038");
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -57,7 +61,8 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        new FetchWeatherTask().execute();
+        String zipCode = "18038";
+        new FetchWeatherTask().execute(zipCode);
 
 
 
@@ -75,7 +80,8 @@ public class ForecastFragment extends Fragment {
             "Today - Sunny - 88/63",
             "Today - Sunny - 88/63"
         };
-        ArrayList<String> weekForecast = new ArrayList<>(
+
+        List<String> weekForecast = new ArrayList<>(
                 Arrays.asList(forecastArray)
         );
         ListView listView = (ListView)rootView.findViewById(
@@ -92,19 +98,36 @@ public class ForecastFragment extends Fragment {
         return rootView;
     }
 
-    private class FetchWeatherTask extends AsyncTask<Void, Void, Void> {
+    private class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
+
         @Override
-        protected Void doInBackground(Void... params) {
+        protected void onPostExecute(String[] result) {
+            if(result != null){
+                mForecastAdapter.clear();
+                for (String dayForecastStr: result) {
+                    mForecastAdapter.add(dayForecastStr);
+                }
+            }
+        }
+
+        @Override
+        protected String[] doInBackground(String... params) {
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             String forecastJsonStr = null;
 
 
             try {
+                Uri uri = Uri.parse("http://api.openweathermap.org/data/2.5/forecast/daily")
+                    .buildUpon()
+                    .appendQueryParameter("q", params[0])
+                    .appendQueryParameter("units", "metric")
+                    .appendQueryParameter("cnt", "7")
+                    .appendQueryParameter("mode", "json")
+                    .appendQueryParameter("appid", BuildConfig.OPEN_WEATHER_MAP_API_KEY)
+                    .build();
 
-                String baseUrl = "http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&units=metric&cnt=7&mode=json";
-                String apiKey = "&APPID=" + BuildConfig.OPEN_WEATHER_MAP_API_KEY;
-                URL url = new URL(baseUrl.concat(apiKey));
+                URL url = new URL(uri.toString());
 
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
@@ -126,7 +149,16 @@ public class ForecastFragment extends Fragment {
                     return null;
 
                 forecastJsonStr = buffer.toString();
+                try {
+                    String[] forecastArray = OpenWeatherHelper.getWeatherDataFromJson(forecastJsonStr, 7);
+                    return forecastArray;
+                }catch(JSONException e){
 
+                }
+                    //JSONObject jsonObject = new JSONObject(forecastJsonStr);
+                    //JSONObject dt = (JSONObject) jsonObject.getJSONArray("list").getJSONObject(1);
+                    //dt.getJSONObject("temp").getDouble("max");
+                    //http://stackoverflow.com/questions/24231223/how-can-i-cast-a-jsonobject-to-a-custom-java-class
             }catch(IOException e){
                 Log.e("ForecastFragment", "Error", e);
                 return null;
