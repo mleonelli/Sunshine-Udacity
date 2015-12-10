@@ -5,6 +5,9 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -25,6 +28,22 @@ public class ForecastFragment extends Fragment {
     ArrayAdapter<String> mForecastAdapter;
 
     public ForecastFragment() {
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.forecastFragment, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.action_refresh:
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
     @Override
@@ -69,7 +88,7 @@ public class ForecastFragment extends Fragment {
 
     private class FetchWeatherTask extends AsyncTask<Void, Void, Void> {
         @Override
-        protected void doInBackground(Void... params) {
+        protected Void doInBackground(Void... params) {
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             String forecastJsonStr = null;
@@ -101,7 +120,7 @@ public class ForecastFragment extends Fragment {
                     return null;
 
                 forecastJsonStr = buffer.toString();
-                return forecastJsonStr;
+
             }catch(IOException e){
                 Log.e("ForecastFragment", "Error", e);
                 return null;
@@ -118,6 +137,8 @@ public class ForecastFragment extends Fragment {
                     }
                 }
             }
+
+            return null;
         }
     }
 }
