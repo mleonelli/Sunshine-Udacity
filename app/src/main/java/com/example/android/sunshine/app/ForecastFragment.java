@@ -1,9 +1,11 @@
 package com.example.android.sunshine.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -25,8 +27,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 
 public class ForecastFragment extends Fragment {
@@ -49,13 +49,25 @@ public class ForecastFragment extends Fragment {
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateWeather();
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()) {
             case R.id.action_refresh:
-                new FetchWeatherTask().execute("18038");
+                updateWeather();
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void updateWeather() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        String location = prefs.getString(getString(R.string.pref_zip_code_key), getString(R.string.pref_zip_code_default));
+        new FetchWeatherTask().execute(location);
     }
 
     @Override
@@ -63,13 +75,13 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        String zipCode = "18038";
-        new FetchWeatherTask().execute(zipCode);
+        //String zipCode = "18038";
+        //new FetchWeatherTask().execute(zipCode);
 
 
 
         //Create some dummy data for ListView
-        String[] forecastArray = {
+        /*String[] forecastArray = {
             "Today - Sunny - 88/63",
             "Today - Sunny - 88/63",
             "Today - Sunny - 88/63",
@@ -85,7 +97,7 @@ public class ForecastFragment extends Fragment {
 
         List<String> weekForecast = new ArrayList<>(
                 Arrays.asList(forecastArray)
-        );
+        );*/
         ListView listView = (ListView)rootView.findViewById(
             R.id.listview_forecast
         );
@@ -94,7 +106,7 @@ public class ForecastFragment extends Fragment {
                 getActivity(),
                 R.layout.list_item_forecast,
                 R.id.list_item_forecast_textview,
-                weekForecast
+                new ArrayList<String>()
         );
         listView.setAdapter(mForecastAdapter);
 
